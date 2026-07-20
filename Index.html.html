@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bitácora semanal &amp; mensual</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#182634;
+    --paper:#F5F3EC;
+    --line:#DDD7C8;
+    --green:#1F6F54;
+    --rust:#A2432B;
+    --gold:#B08D57;
+    --paper-sel:#EFE9D8;
+    --trabajo:#2B4C7E;
+    --estudio:#7A4B8A;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'IBM Plex Mono', monospace;
+    -webkit-font-smoothing:antialiased;
+  }
+  .serif{font-family:'Source Serif 4', Georgia, serif;}
+  .wrap{max-width:780px;margin:0 auto;padding:28px 16px 60px;}
+  .top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px;}
+  .eyebrow{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:4px;}
+  h1{font-size:34px;line-height:1;margin:0;font-weight:600;}
+  h1 .year{color:var(--rust);}
+  .navbtns{display:flex;gap:4px;margin-top:4px;}
+  .iconbtn{width:32px;height:32px;display:flex;align-items:center;justify-content:center;border:1px solid var(--ink);background:transparent;cursor:pointer;border-radius:2px;color:var(--ink);}
+  .iconbtn:hover{background:var(--paper-sel);}
+  .iconbtn:focus-visible{outline:2px solid var(--rust);outline-offset:2px;}
+  .iconbtn:disabled{opacity:.25;cursor:default;}
+
+  .tabs{display:flex;gap:0;margin:18px 0 16px;border-bottom:1px solid var(--line);}
+  .tabbtn{background:none;border:none;font-family:inherit;font-size:12px;letter-spacing:.08em;text-transform:uppercase;padding:8px 2px;margin-right:22px;cursor:pointer;color:var(--gold);border-bottom:2px solid transparent;position:relative;top:1px;}
+  .tabbtn.active{color:var(--ink);border-bottom-color:var(--rust);font-weight:600;}
+  .tabbtn:focus-visible{outline:2px solid var(--rust);outline-offset:2px;}
+
+  .filterbar{display:flex;align-items:center;gap:10px;margin:0 0 18px;}
+  .filterlabel{font-size:11px;color:var(--gold);}
+  .segwrap{display:flex;border:1px solid var(--ink);border-radius:2px;overflow:hidden;}
+  .segbtn{background:transparent;border:none;font-family:inherit;font-size:11px;padding:5px 11px;cursor:pointer;color:var(--ink);}
+  .segbtn+.segbtn{border-left:1px solid var(--ink);}
+  .segbtn.active{background:var(--ink);color:var(--paper);}
+
+  .progress-row{display:flex;justify-content:space-between;font-size:11px;margin:0 0 4px;}
+  .progress-pct{color:var(--green);font-weight:600;}
+  .progress-track{width:100%;height:3px;background:var(--line);}
+  .progress-fill{height:3px;background:var(--green);transition:width .4s;}
+  .jumprow{display:flex;align-items:center;gap:8px;font-size:12px;margin:16px 0;flex-wrap:wrap;}
+  .jumprow select, .jumprow input{
+    background:transparent;border:none;border-bottom:1px solid var(--ink);
+    font-family:inherit;font-size:12px;padding:2px 0;color:var(--ink);
+  }
+  .jumprow input[type=number]{width:64px;}
+  .link-btn{background:none;border:none;text-decoration:underline;text-decoration-style:dotted;font-size:11px;cursor:pointer;color:var(--ink);font-family:inherit;padding:0;}
+  .spacer{flex:1;}
+  .iobtn{background:none;border:1px solid var(--ink);font-size:11px;padding:4px 8px;cursor:pointer;font-family:inherit;color:var(--ink);border-radius:2px;}
+  .iobtn:hover{background:var(--paper-sel);}
+  .weekhead{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:2px;}
+  .weekhead div{text-align:center;font-size:10px;letter-spacing:.15em;color:var(--gold);padding:4px 0;}
+  .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--line);border:1px solid var(--line);}
+  .cell{background:var(--paper);min-height:68px;padding:6px;text-align:left;border:none;cursor:pointer;display:flex;flex-direction:column;position:relative;border-left:2px solid transparent;font-family:inherit;}
+  .cell:hover{background:var(--paper-sel);}
+  .cell.empty{cursor:default;}
+  .cell.empty:hover{background:var(--paper);}
+  .cell.today{border-left:2px solid var(--rust);}
+  .cell.selected{background:var(--paper-sel);}
+  .cell:focus-visible{outline:2px solid var(--rust);outline-offset:-2px;}
+  .daynum{font-size:13px;font-weight:500;}
+  .cell.today .daynum{color:var(--rust);font-weight:700;}
+  .cellrow{display:flex;align-items:center;justify-content:space-between;width:100%;}
+  .stamp{width:14px;height:14px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;}
+  .stamp svg{width:8px;height:8px;}
+  .taskcount{font-size:10px;margin-top:auto;padding-top:4px;color:var(--gold);}
+  .taskcount.done{color:var(--green);}
+  .catdots{display:flex;gap:3px;margin-top:2px;}
+  .catdot{width:5px;height:5px;border-radius:50%;}
+  .foot{font-size:10px;text-align:center;color:var(--gold);margin-top:28px;line-height:1.6;}
+
+  .overlay{position:fixed;inset:0;background:rgba(24,38,52,.35);display:none;align-items:flex-end;justify-content:center;z-index:40;}
+  .overlay.show{display:flex;}
+  @media(min-width:640px){.overlay{align-items:center;}}
+  .drawer{width:100%;max-width:460px;max-height:85vh;overflow-y:auto;background:var(--paper);border:1px solid var(--ink);}
+  @media(min-width:640px){.drawer{border-radius:2px;}}
+  .drawer-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 12px;border-bottom:1px solid var(--line);}
+  .drawer-head h2{font-size:20px;font-weight:600;margin:0;}
+  .drawer-body{padding:12px 20px;}
+  .empty-msg{font-size:12px;color:var(--gold);}
+  ul.tasks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;}
+  ul.tasks li{display:flex;align-items:flex-start;gap:6px;}
+  .check{margin-top:2px;width:19px;height:19px;flex-shrink:0;border-radius:50%;border:1.5px solid var(--ink);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .check.done{background:var(--green);border-color:var(--green);}
+  .check svg{width:11px;height:11px;}
+  .taskmain{flex:1;min-width:0;}
+  .tasktext{font-size:14px;line-height:1.4;display:block;}
+  .tasktext.done{text-decoration:line-through;text-decoration-color:var(--green);text-decoration-thickness:1.5px;opacity:.55;}
+  .catpill{display:inline-block;font-size:9px;letter-spacing:.05em;text-transform:uppercase;padding:1px 6px;border-radius:8px;margin-bottom:3px;}
+  .catpill.trabajo{background:#2B4C7E1c;color:var(--trabajo);border:1px solid #2B4C7E55;}
+  .catpill.estudio{background:#7A4B8A1c;color:var(--estudio);border:1px solid #7A4B8A55;}
+  .delbtn{background:none;border:none;cursor:pointer;opacity:.35;flex-shrink:0;padding:2px;color:var(--ink);}
+  .delbtn:hover{opacity:1;}
+  .drawer-add{display:flex;flex-direction:column;gap:8px;padding:14px 20px;border-top:1px solid var(--line);}
+  .drawer-add-row{display:flex;align-items:center;gap:8px;}
+  .drawer-add input[type=text]{flex:1;background:transparent;border:none;border-bottom:1px solid var(--ink);padding:6px 0;font-family:inherit;font-size:14px;outline:none;}
+  .catselect{display:flex;border:1px solid var(--ink);border-radius:2px;overflow:hidden;flex-shrink:0;}
+  .catselect button{background:transparent;border:none;font-family:inherit;font-size:10px;padding:5px 8px;cursor:pointer;color:var(--ink);}
+  .catselect button+button{border-left:1px solid var(--ink);}
+  .catselect button.active.trabajo{background:var(--trabajo);color:var(--paper);}
+  .catselect button.active.estudio{background:var(--estudio);color:var(--paper);}
+  .addbtn{width:32px;height:32px;flex-shrink:0;background:var(--ink);color:var(--paper);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:2px;}
+  .addbtn:hover{opacity:.85;}
+  .closebtn{background:none;border:none;cursor:pointer;color:var(--ink);width:26px;height:26px;display:flex;align-items:center;justify-content:center;}
+  .hidden{display:none !important;}
+
+  .weekrange{font-size:13px;color:var(--gold);margin:2px 0 18px;}
+  .daycard{border:1px solid var(--line);margin-bottom:14px;background:var(--paper);}
+  .daycard.today{border-color:var(--rust);}
+  .daycard-head{display:flex;align-items:baseline;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--paper-sel);}
+  .daycard-head .dname{font-size:14px;font-weight:600;text-transform:capitalize;}
+  .daycard.today .dname{color:var(--rust);}
+  .daycard-head .dcount{font-size:11px;color:var(--gold);}
+  .daycard-body{padding:12px 14px;}
+  .weektask{display:flex;align-items:flex-start;gap:6px;padding:5px 0;border-bottom:1px dashed var(--line);}
+  .weektask:last-child{border-bottom:none;}
+  .ordercol{display:flex;flex-direction:column;gap:1px;margin-top:1px;}
+  .orderbtn{background:none;border:none;cursor:pointer;color:var(--ink);font-size:10px;line-height:1;padding:2px 3px;}
+  .orderbtn:disabled{opacity:.2;cursor:default;}
+  .orderbtn:hover:not(:disabled){color:var(--rust);}
+  .weekaddrow{display:flex;align-items:center;gap:6px;padding-top:10px;margin-top:6px;flex-wrap:wrap;}
+  .weekaddrow input[type=text]{flex:1;min-width:120px;background:transparent;border:none;border-bottom:1px solid var(--ink);padding:5px 0;font-family:inherit;font-size:13px;outline:none;}
+  .weekaddrow button.addbtn{width:26px;height:26px;flex-shrink:0;background:var(--ink);color:var(--paper);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:2px;}
+  .weekempty{font-size:11px;color:var(--gold);padding:2px 0 8px;}
+
+  .dictate-bar{margin:2px 0 14px;}
+  .dictate-drawer{max-width:520px;}
+  .dictate-help{font-size:11px;color:var(--gold);margin:0 0 14px;line-height:1.6;}
+  .dictate-controls{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;}
+  .micbtn{display:flex;align-items:center;gap:7px;background:var(--ink);color:var(--paper);border:none;padding:9px 16px;border-radius:2px;cursor:pointer;font-family:inherit;font-size:13px;}
+  .micbtn.recording{background:var(--rust);}
+  .micbtn:disabled{opacity:.35;cursor:default;}
+  .micstatus{font-size:11px;color:var(--gold);}
+  #transcriptBox{width:100%;background:transparent;border:1px solid var(--line);padding:9px;font-family:inherit;font-size:13px;resize:vertical;color:var(--ink);}
+  .analyze-btn{margin-top:10px;}
+  .daygroup{border:1px solid var(--line);margin-top:14px;}
+  .daygroup-head{display:flex;align-items:center;justify-content:space-between;background:var(--paper-sel);padding:8px 12px;gap:8px;flex-wrap:wrap;}
+  .daygroup-head .glabel{font-size:12px;font-weight:600;text-transform:capitalize;}
+  .daygroup-head input[type=date]{background:transparent;border:none;border-bottom:1px solid var(--ink);font-family:inherit;font-size:11px;}
+  .daygroup-body{padding:10px 12px;}
+  .draftrow{display:flex;align-items:center;gap:6px;margin-bottom:6px;}
+  .draftrow input{flex:1;background:transparent;border:none;border-bottom:1px solid var(--line);padding:4px 0;font-family:inherit;font-size:13px;color:var(--ink);}
+  .draftrow button{background:none;border:none;cursor:pointer;opacity:.4;color:var(--ink);flex-shrink:0;}
+  .draftrow button:hover{opacity:1;}
+  .addlinebtn{font-size:11px;background:none;border:none;text-decoration:underline dotted;cursor:pointer;color:var(--ink);font-family:inherit;padding:0;margin-top:2px;}
+  .dictate-footer{display:flex;justify-content:flex-end;gap:10px;}
+  .addbtn2{background:var(--ink);color:var(--paper);border:none;padding:8px 18px;cursor:pointer;font-family:inherit;font-size:12px;border-radius:2px;}
+  .addbtn2:hover{opacity:.85;}
+  .noresults{font-size:11px;color:var(--gold);margin-top:14px;}
+
+  /* tareas y exámenes */
+  .tablewrap{overflow-x:auto;border:1px solid var(--line);margin-bottom:12px;}
+  table.datatable{width:100%;border-collapse:collapse;font-size:12px;min-width:600px;}
+  table.datatable th{text-align:left;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);padding:9px 10px;border-bottom:1px solid var(--line);background:var(--paper-sel);white-space:nowrap;}
+  table.datatable td{padding:6px 10px;border-bottom:1px solid var(--line);vertical-align:middle;}
+  table.datatable tr:last-child td{border-bottom:none;}
+  table.datatable input[type=text], table.datatable input[type=date]{background:transparent;border:none;border-bottom:1px solid transparent;font-family:inherit;font-size:12px;width:100%;color:var(--ink);padding:3px 0;}
+  table.datatable input[type=text]:focus, table.datatable input[type=date]:focus{outline:none;border-bottom:1px solid var(--ink);}
+  .statuspill{font-size:10px;padding:4px 10px;border-radius:10px;border:1px solid;cursor:pointer;white-space:nowrap;font-family:inherit;background:transparent;}
+  .statuspill.pendiente{color:var(--gold);border-color:var(--gold);}
+  .statuspill.completado{background:#1F6F5422;color:var(--green);border-color:var(--green);}
+  .importantbtn{width:22px;height:22px;border-radius:50%;border:1px solid var(--line);background:transparent;cursor:pointer;color:var(--line);font-size:12px;font-weight:700;line-height:1;}
+  .importantbtn.active{background:var(--rust);border-color:var(--rust);color:var(--paper);}
+  .rowdel{background:none;border:none;cursor:pointer;opacity:.35;color:var(--ink);font-size:12px;}
+  .rowdel:hover{opacity:1;}
+  .examcheck{width:15px;height:15px;cursor:pointer;accent-color:var(--green);}
+  .daysleft{font-size:11px;color:var(--gold);white-space:nowrap;}
+  .daysleft.overdue{color:var(--rust);}
+  .daysleft.done{color:var(--green);}
+  .tableempty{font-size:11px;color:var(--gold);padding:10px 0;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <div class="eyebrow">Bitácora semanal &amp; mensual</div>
+      <h1 class="serif" id="viewTitle"><span id="monthName"></span> <span class="year" id="yearName"></span></h1>
+    </div>
+    <div class="navbtns" id="navBtns">
+      <button class="iconbtn" id="prevBtn" aria-label="Anterior">&#8249;</button>
+      <button class="iconbtn" id="nextBtn" aria-label="Siguiente">&#8250;</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tabbtn active" id="tabMonth">Vista mensual</button>
+    <button class="tabbtn" id="tabWeek">Vista semanal</button>
+    <button class="tabbtn" id="tabTasks">Tareas y exámenes</button>
+  </div>
+
+  <div class="filterbar" id="filterbarWrap">
+    <span class="filterlabel">Ver:</span>
+    <div class="segwrap" id="catFilter">
+      <button class="segbtn active" data-cat="all">Todos</button>
+      <button class="segbtn" data-cat="trabajo">Trabajo</button>
+      <button class="segbtn" data-cat="estudio">Estudio</button>
+    </div>
+  </div>
+
+  <div class="dictate-bar" id="dictateBarWrap" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+    <button class="iobtn" id="openDictateBtn">&#127908; Dictar actividades por voz</button>
+    <button class="link-btn" id="resetStudyBtn">&#8635; Reiniciar plan de estudio (CFA)</button>
+  </div>
+
+  <!-- MONTH VIEW -->
+  <div id="monthView">
+    <div class="progress-row">
+      <span id="progressLabel">0/0 actividades completadas</span>
+      <span class="progress-pct" id="progressPct">0%</span>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+
+    <div class="jumprow">
+      <select id="monthSelect"></select>
+      <input type="number" id="yearInput" />
+      <button class="link-btn" id="todayBtn">Ir a hoy</button>
+      <span class="spacer"></span>
+      <button class="iobtn" id="exportBtn">Exportar datos</button>
+      <button class="iobtn" id="importBtn">Importar datos</button>
+      <input type="file" id="importFile" accept="application/json" class="hidden" />
+    </div>
+
+    <div class="weekhead">
+      <div>L</div><div>M</div><div>X</div><div>J</div><div>V</div><div>S</div><div>D</div>
+    </div>
+    <div class="grid" id="grid"></div>
+  </div>
+
+  <!-- WEEK VIEW -->
+  <div id="weekView" class="hidden">
+    <div class="weekrange" id="weekRange"></div>
+    <div class="jumprow">
+      <span style="font-size:12px;">Ir a la semana de:</span>
+      <input type="date" id="weekDateInput" />
+      <button class="link-btn" id="weekTodayBtn">Semana actual</button>
+    </div>
+    <div id="weekDays"></div>
+  </div>
+
+  <!-- TASKS & EXAMS VIEW -->
+  <div id="tasksView" class="hidden">
+    <h2 class="serif" style="font-size:19px;margin:0 0 12px;">Asignaciones por curso</h2>
+    <div class="tablewrap">
+      <table class="datatable" id="assignTable">
+        <thead><tr><th>Curso</th><th>Tarea</th><th>Estado</th><th>Fecha límite</th><th>Días</th><th></th></tr></thead>
+        <tbody id="assignBody"></tbody>
+      </table>
+    </div>
+    <button class="iobtn" id="addAssignBtn">+ Agregar tarea</button>
+
+    <h2 class="serif" style="font-size:19px;margin:30px 0 12px;">Exámenes</h2>
+    <div class="tablewrap">
+      <table class="datatable" id="examTable">
+        <thead><tr><th>Hecho</th><th>Fecha</th><th>Curso</th><th>Examen</th><th>Import.</th><th></th></tr></thead>
+        <tbody id="examBody"></tbody>
+      </table>
+    </div>
+    <button class="iobtn" id="addExamBtn">+ Agregar examen</button>
+  </div>
+
+  <p class="foot">Tus datos se guardan automáticamente en el navegador de este dispositivo.<br>Usa "Exportar / Importar" para llevarlos a otra computadora.</p>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="drawer">
+    <div class="drawer-head">
+      <h2 class="serif" id="drawerTitle"></h2>
+      <button class="closebtn" id="closeBtn" aria-label="Cerrar">&#10005;</button>
+    </div>
+    <div class="drawer-body">
+      <p class="empty-msg hidden" id="emptyMsg">Sin actividades registradas para este día.</p>
+      <ul class="tasks" id="taskList"></ul>
+    </div>
+    <div class="drawer-add">
+      <div class="drawer-add-row">
+        <input type="text" id="newTaskInput" placeholder="Nueva actividad…" />
+        <button class="addbtn" id="addTaskBtn" aria-label="Agregar actividad">+</button>
+      </div>
+      <div class="catselect" id="newTaskCat">
+        <button class="active trabajo" data-cat="trabajo">Trabajo</button>
+        <button class="estudio" data-cat="estudio">Estudio</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="dictateOverlay">
+  <div class="drawer dictate-drawer">
+    <div class="drawer-head">
+      <h2 class="serif">Dictar actividades</h2>
+      <button class="closebtn" id="dictateCloseBtn" aria-label="Cerrar">&#10005;</button>
+    </div>
+    <div class="drawer-body">
+      <p class="dictate-help">
+        Presiona "Grabar" y dicta tu planificación, por ejemplo: <em>"Para mañana, primero revisar cobertura, segundo comité G7. El jueves, enviar portafolio."</em>
+        Luego revisa el texto, ajusta la categoría de cada día (Trabajo o Estudio) y confirma antes de guardar.
+      </p>
+      <div class="dictate-controls">
+        <button id="micBtn" class="micbtn"><span id="micIcon">&#127908;</span> <span id="micLabel">Grabar</span></button>
+        <span id="micStatus" class="micstatus"></span>
+      </div>
+      <textarea id="transcriptBox" rows="4" placeholder="Aquí aparecerá lo que dictes… también puedes escribir o pegar el texto directamente."></textarea>
+      <button class="iobtn analyze-btn" id="analyzeBtn">Analizar texto</button>
+      <div id="dictateResults"></div>
+    </div>
+    <div class="drawer-add dictate-footer hidden" id="dictateFooter">
+      <button class="iobtn" id="dictateCancelBtn">Cancelar</button>
+      <button class="addbtn2" id="dictateSaveBtn">Agregar a la agenda</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+const DIAS_LARGO = ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"];
+const CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+const CAT_LABEL = { trabajo:"Trabajo", estudio:"Estudio" };
+
+function pad(n){return String(n).padStart(2,"0");}
+function monthKeyOf(y,m){return `${y}-${pad(m)}`;}
+function storageKey(mKey){return `planner-month-${mKey}`;}
+function todayStr(){const d=new Date();return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;}
+function uid(){return Math.random().toString(36).slice(2,10)+Date.now().toString(36);}
+function toDateStr(d){return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;}
+function catOf(t){ return t.category === "estudio" ? "estudio" : "trabajo"; }
+
+const SEED = {
+  "2026-07-14": ["Comité G7","Revisión de mi cobertura","Reunión con externos","Revisar emisor corporativo de Estados Unidos","Enviar y actualizar el portafolio de short duration","Reunión con Sebastián sobre el comité G7"],
+  "2026-07-15": ["Revisar adecuación 27","Revisar segundo corporativo US","Planificación del comité de crédito automático","Reunión con externo"],
+  "2026-07-16": ["Revisar sell sides relacionados a US","Enviar comité","Enviar portafolio G7 actualizado","Revisar República Dominicana","Planificar nombres para el próximo comité de corto plazo"],
+  "2026-07-17": ["Actualizar trading book de la siguiente semana","Leer reporte de JP Morgan","Resumen de cobertura con nombres más rezagados y determinar confort"]
+};
+
+/* Plan de estudio CFA (43 capítulos, Libros 1-5) + inglés, del 16 de julio al 31 de octubre 2026 */
+const SEED_STUDY = {
+  "2026-07-16": [{text:"CFA — Capítulo 1 (Libro 1): lectura y conceptos (1h)", category:"estudio"}],
+  "2026-07-17": [{text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-07-18": [{text:"CFA — Práctica: ejercicios capítulo 1 (3h)", category:"estudio"}, {text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-07-19": [{text:"CFA — Práctica y repaso semanal: capítulo 1 (3h)", category:"estudio"}, {text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-07-20": [{text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-07-21": [{text:"CFA — Capítulo 2 (Libro 1): lectura y conceptos (1h)", category:"estudio"}],
+  "2026-07-22": [{text:"CFA — Capítulo 3 (Libro 1): lectura y conceptos (1h)", category:"estudio"}],
+  "2026-07-23": [{text:"CFA — Capítulo 4 (Libro 1): lectura y conceptos (1h)", category:"estudio"}],
+  "2026-07-24": [{text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-07-25": [{text:"CFA — Práctica: ejercicios capítulos 2-4 (3h)", category:"estudio"}, {text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-07-26": [{text:"CFA — Práctica y repaso semanal: capítulos 2-4 (3h)", category:"estudio"}, {text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-07-27": [{text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-07-28": [{text:"CFA — Capítulo 5 (Libro 1): lectura y conceptos (1h)", category:"estudio"}],
+  "2026-07-29": [{text:"CFA — Capítulo 6 (Libro 1): lectura y conceptos (1h)", category:"estudio"}],
+  "2026-07-30": [{text:"CFA — Capítulo 7 (Libro 1): lectura y conceptos (1h)", category:"estudio"}],
+  "2026-07-31": [{text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-08-01": [{text:"CFA — Práctica: ejercicios capítulos 5-7 (3h)", category:"estudio"}, {text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-08-02": [{text:"CFA — Práctica y repaso semanal: capítulos 5-7 (3h)", category:"estudio"}, {text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-08-03": [{text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-08-04": [{text:"CFA — Capítulo 8 (Libro 2): lectura y conceptos (1h)", category:"estudio"}],
+  "2026-08-05": [{text:"CFA — Capítulo 9 (Libro 2): lectura y conceptos (1h)", category:"estudio"}],
+  "2026-08-06": [{text:"CFA — Capítulo 10 (Libro 2): lectura y conceptos (1h)", category:"estudio"}],
+  "2026-08-07": [{text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-08-08": [{text:"CFA — Práctica: ejercicios capítulos 8-10 (3h)", category:"estudio"}, {text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-08-09": [{text:"CFA — Práctica y repaso semanal: capítulos 8-10 (3h)", category:"estudio"}, {text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-08-10": [{text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-08-11": [{text:"CFA — Capítulo 11 (Libro 2): lectura y conceptos (1h)", category:"estudio"}],
+  "2026-08-12": [{text:"CFA — Capítulo 12 (Libro 2): lectura y conceptos (1h)", category:"estudio"}],
+  "2026-08-13": [{text:"CFA — Capítulo 13 (Libro 2): lectura y conceptos (1h)", category:"estudio"}],
+  "2026-08-14": [{text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-08-15": [{text:"CFA — Práctica: ejercicios capítulos 11-13 (3h)", category:"estudio"}, {text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-08-16": [{text:"CFA — Práctica y repaso semanal: capítulos 11-13 (3h)", category:"estudio"}, {text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-08-17": [{text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-08-18": [{text:"CFA — Capítulo 14 (Libro 2): lectura y conceptos (1h)", category:"estudio"}],
+  "2026-08-19": [{text:"CFA — Capítulo 15 (Libro 2): lectura y conceptos (1h)", category:"estudio"}],
+  "2026-08-20": [{text:"CFA — Capítulo 16 (Libro 2): lectura y conceptos (1h)", category:"estudio"}],
+  "2026-08-21": [{text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-08-22": [{text:"CFA — Práctica: ejercicios capítulos 14-16 (3h)", category:"estudio"}, {text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-08-23": [{text:"CFA — Práctica y repaso semanal: capítulos 14-16 (3h)", category:"estudio"}, {text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-08-24": [{text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-08-25": [{text:"CFA — Capítulo 17 (Libro 2): lectura y conceptos (1h)", category:"estudio"}],
+  "2026-08-26": [{text:"CFA — Capítulo 18 (Libro 2): lectura y conceptos (1h)", category:"estudio"}],
+  "2026-08-27": [{text:"CFA — Capítulo 19 (Libro 3): lectura y conceptos (1h)", category:"estudio"}],
+  "2026-08-28": [{text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-08-29": [{text:"CFA — Práctica: ejercicios capítulos 17-19 (3h)", category:"estudio"}, {text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-08-30": [{text:"CFA — Práctica y repaso semanal: capítulos 17-19 (3h)", category:"estudio"}, {text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-08-31": [{text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-09-01": [{text:"CFA — Capítulo 20 (Libro 3): lectura y conceptos (1h)", category:"estudio"}],
+  "2026-09-02": [{text:"CFA — Capítulo 21 (Libro 3): lectura y conceptos (1h)", category:"estudio"}],
+  "2026-09-03": [{text:"CFA — Capítulo 22 (Libro 3): lectura y conceptos (1h)", category:"estudio"}],
+  "2026-09-04": [{text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-09-05": [{text:"CFA — Práctica: ejercicios capítulos 20-22 (3h)", category:"estudio"}, {text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-09-06": [{text:"CFA — Práctica y repaso semanal: capítulos 20-22 (3h)", category:"estudio"}, {text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-09-07": [{text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-09-08": [{text:"CFA — Capítulo 23 (Libro 3): lectura y conceptos (1h)", category:"estudio"}],
+  "2026-09-09": [{text:"CFA — Capítulo 24 (Libro 3): lectura y conceptos (1h)", category:"estudio"}],
+  "2026-09-10": [{text:"CFA — Capítulo 25 (Libro 4): lectura y conceptos (1h)", category:"estudio"}],
+  "2026-09-11": [{text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-09-12": [{text:"CFA — Práctica: ejercicios capítulos 23-25 (3h)", category:"estudio"}, {text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-09-13": [{text:"CFA — Práctica y repaso semanal: capítulos 23-25 (3h)", category:"estudio"}, {text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-09-14": [{text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-09-15": [{text:"CFA — Capítulo 26 (Libro 4): lectura y conceptos (1h)", category:"estudio"}],
+  "2026-09-16": [{text:"CFA — Capítulo 27 (Libro 4): lectura y conceptos (1h)", category:"estudio"}],
+  "2026-09-17": [{text:"CFA — Capítulo 28 (Libro 4): lectura y conceptos (1h)", category:"estudio"}],
+  "2026-09-18": [{text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-09-19": [{text:"CFA — Práctica: ejercicios capítulos 26-28 (3h)", category:"estudio"}, {text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-09-20": [{text:"CFA — Práctica y repaso semanal: capítulos 26-28 (3h)", category:"estudio"}, {text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-09-21": [{text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-09-22": [{text:"CFA — Capítulo 29 (Libro 4): lectura y conceptos (1h)", category:"estudio"}],
+  "2026-09-23": [{text:"CFA — Capítulo 30 (Libro 4): lectura y conceptos (1h)", category:"estudio"}],
+  "2026-09-24": [{text:"CFA — Capítulo 31 (Libro 4): lectura y conceptos (1h)", category:"estudio"}],
+  "2026-09-25": [{text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-09-26": [{text:"CFA — Práctica: ejercicios capítulos 29-31 (3h)", category:"estudio"}, {text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-09-27": [{text:"CFA — Práctica y repaso semanal: capítulos 29-31 (3h)", category:"estudio"}, {text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-09-28": [{text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-09-29": [{text:"CFA — Capítulo 32 (Libro 4): lectura y conceptos (1h)", category:"estudio"}],
+  "2026-09-30": [{text:"CFA — Capítulo 33 (Libro 4): lectura y conceptos (1h)", category:"estudio"}],
+  "2026-10-01": [{text:"CFA — Capítulo 34 (Libro 4): lectura y conceptos (1h)", category:"estudio"}],
+  "2026-10-02": [{text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-10-03": [{text:"CFA — Práctica: ejercicios capítulos 32-34 (3h)", category:"estudio"}, {text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-10-04": [{text:"CFA — Práctica y repaso semanal: capítulos 32-34 (3h)", category:"estudio"}, {text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-10-05": [{text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-10-06": [{text:"CFA — Capítulo 35 (Libro 5): lectura y conceptos (1h)", category:"estudio"}],
+  "2026-10-07": [{text:"CFA — Capítulo 36 (Libro 5): lectura y conceptos (1h)", category:"estudio"}],
+  "2026-10-08": [{text:"CFA — Capítulo 37 (Libro 5): lectura y conceptos (1h)", category:"estudio"}],
+  "2026-10-09": [{text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-10-10": [{text:"CFA — Práctica: ejercicios capítulos 35-37 (3h)", category:"estudio"}, {text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-10-11": [{text:"CFA — Práctica y repaso semanal: capítulos 35-37 (3h)", category:"estudio"}, {text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-10-12": [{text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-10-13": [{text:"CFA — Capítulo 38 (Libro 5): lectura y conceptos (1h)", category:"estudio"}],
+  "2026-10-14": [{text:"CFA — Capítulo 39 (Libro 5): lectura y conceptos (1h)", category:"estudio"}],
+  "2026-10-15": [{text:"CFA — Capítulo 40 (Libro 5): lectura y conceptos (1h)", category:"estudio"}],
+  "2026-10-16": [{text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-10-17": [{text:"CFA — Práctica: ejercicios capítulos 38-40 (3h)", category:"estudio"}, {text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-10-18": [{text:"CFA — Práctica y repaso semanal: capítulos 38-40 (3h)", category:"estudio"}, {text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-10-19": [{text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-10-20": [{text:"CFA — Capítulo 41 (Libro 5): lectura y conceptos (1h)", category:"estudio"}],
+  "2026-10-21": [{text:"CFA — Capítulo 42 (Libro 5): lectura y conceptos (1h)", category:"estudio"}],
+  "2026-10-22": [{text:"CFA — Capítulo 43 (Libro 5): lectura y conceptos (1h)", category:"estudio"}],
+  "2026-10-23": [{text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-10-24": [{text:"CFA — Práctica: ejercicios capítulos 41-43 (3h)", category:"estudio"}, {text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-10-25": [{text:"CFA — Práctica y repaso semanal: capítulos 41-43 (3h)", category:"estudio"}, {text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-10-26": [{text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-10-27": [{text:"CFA — Repaso general: Libro 1 y Libro 2 (1h)", category:"estudio"}],
+  "2026-10-28": [{text:"CFA — Repaso general: Libro 3 y Libro 4 (1h)", category:"estudio"}],
+  "2026-10-29": [{text:"CFA — Repaso general: Libro 5 (1h)", category:"estudio"}],
+  "2026-10-30": [{text:"Inglés — clase (1h)", category:"estudio"}],
+  "2026-10-31": [{text:"CFA — Simulacro de examen completo: 43 capítulos (3h)", category:"estudio"}, {text:"Inglés — clase (1h)", category:"estudio"}]
+};
+
+const SEEDED_MONTHS = ["2026-07","2026-08","2026-09","2026-10"];
+
+function getMonthData(mKey){
+  const raw = localStorage.getItem(storageKey(mKey));
+  if(raw){ return JSON.parse(raw); }
+  if(SEEDED_MONTHS.includes(mKey)){
+    const seeded = {};
+    Object.entries(SEED).forEach(([date, texts])=>{
+      if(!date.startsWith(mKey)) return;
+      seeded[date] = (seeded[date]||[]).concat(texts.map(t=>({id:uid(), text:t, done:false, category:"trabajo"})));
+    });
+    Object.entries(SEED_STUDY).forEach(([date, items])=>{
+      if(!date.startsWith(mKey)) return;
+      seeded[date] = (seeded[date]||[]).concat(items.map(it=>({id:uid(), text:it.text, done:false, category:it.category})));
+    });
+    localStorage.setItem(storageKey(mKey), JSON.stringify(seeded));
+    return seeded;
+  }
+  return {};
+}
+function setMonthData(mKey, data){
+  localStorage.setItem(storageKey(mKey), JSON.stringify(data));
+}
+
+let currentView = "month";
+let categoryFilter = "all"; // 'all' | 'trabajo' | 'estudio'
+let state = { year: 2026, month: 7, days: {}, selectedDay: null };
+let weekAnchor = new Date();
+let newTaskCategory = "trabajo";
+
+function filterList(list){
+  if(categoryFilter==="all") return list;
+  return list.filter(t=> catOf(t)===categoryFilter);
+}
+
+function getCalendarCells(year, month){
+  const firstDay = new Date(year, month-1, 1);
+  const startWeekday = (firstDay.getDay()+6)%7;
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const cells = [];
+  for(let i=0;i<startWeekday;i++) cells.push(null);
+  for(let d=1; d<=daysInMonth; d++) cells.push(d);
+  while(cells.length % 7 !== 0) cells.push(null);
+  return cells;
+}
+function dateStrFor(day){ return `${monthKeyOf(state.year, state.month)}-${pad(day)}`; }
+
+function escapeHtml(str){
+  const d = document.createElement("div");
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+/* ---------------- VIEW SWITCHING ---------------- */
+function showView(view){
+  currentView = view;
+  document.getElementById("tabMonth").classList.toggle("active", view==="month");
+  document.getElementById("tabWeek").classList.toggle("active", view==="week");
+  document.getElementById("tabTasks").classList.toggle("active", view==="tasks");
+  document.getElementById("monthView").classList.toggle("hidden", view!=="month");
+  document.getElementById("weekView").classList.toggle("hidden", view!=="week");
+  document.getElementById("tasksView").classList.toggle("hidden", view!=="tasks");
+  document.getElementById("navBtns").classList.toggle("hidden", view!=="month");
+  document.getElementById("filterbarWrap").classList.toggle("hidden", view==="tasks");
+  document.getElementById("dictateBarWrap").classList.toggle("hidden", view==="tasks");
+  if(view==="month"){
+    document.getElementById("viewTitle").classList.remove("hidden");
+    state.days = getMonthData(monthKeyOf(state.year, state.month));
+    render();
+  } else if(view==="week"){
+    document.getElementById("viewTitle").classList.add("hidden");
+    renderWeek();
+  } else {
+    document.getElementById("viewTitle").classList.add("hidden");
+    assignments = loadAssignments();
+    exams = loadExams();
+    renderAssignments();
+    renderExams();
+  }
+}
+
+/* ---------------- MONTH VIEW ---------------- */
+function goToMonth(y,m){
+  let ny=y, nm=m;
+  if(nm<1){nm=12; ny-=1;}
+  if(nm>12){nm=1; ny+=1;}
+  state.year=ny; state.month=nm;
+  state.days = getMonthData(monthKeyOf(ny,nm));
+  state.selectedDay = null;
+  document.getElementById("monthSelect").value = nm;
+  document.getElementById("yearInput").value = ny;
+  render();
+}
+
+function saveCurrentMonth(){ setMonthData(monthKeyOf(state.year, state.month), state.days); }
+
+function render(){
+  document.getElementById("monthName").textContent = MESES[state.month-1];
+  document.getElementById("yearName").textContent = state.year;
+
+  let total=0, done=0;
+  Object.values(state.days).forEach(list=>{
+    const fl = filterList(list);
+    total+=fl.length; done+=fl.filter(t=>t.done).length;
+  });
+  const pct = total ? Math.round(done/total*100) : 0;
+  document.getElementById("progressLabel").textContent = `${done}/${total} actividades completadas`;
+  document.getElementById("progressPct").textContent = `${pct}%`;
+  document.getElementById("progressFill").style.width = `${pct}%`;
+
+  const grid = document.getElementById("grid");
+  grid.innerHTML = "";
+  const cells = getCalendarCells(state.year, state.month);
+  const today = todayStr();
+
+  cells.forEach(day=>{
+    if(day===null){
+      const div = document.createElement("div");
+      div.className = "cell empty";
+      grid.appendChild(div);
+      return;
+    }
+    const ds = dateStrFor(day);
+    const tasks = filterList(state.days[ds] || []);
+    const isToday = ds === today;
+    const isSelected = state.selectedDay === day;
+    const allDone = tasks.length>0 && tasks.every(t=>t.done);
+    const hasTrabajo = tasks.some(t=>catOf(t)==="trabajo");
+    const hasEstudio = tasks.some(t=>catOf(t)==="estudio");
+
+    const btn = document.createElement("button");
+    btn.className = "cell" + (isToday?" today":"") + (isSelected?" selected":"");
+    btn.innerHTML = `
+      <div class="cellrow">
+        <span class="daynum">${day}</span>
+        ${allDone ? `<span class="stamp">${CHECK_SVG}</span>` : ""}
+      </div>
+      ${tasks.length>0 ? `<span class="taskcount${allDone?' done':''}">${tasks.filter(t=>t.done).length}/${tasks.length}</span>` : ""}
+      ${tasks.length>0 ? `<div class="catdots">${hasTrabajo?'<span class="catdot" style="background:var(--trabajo)"></span>':''}${hasEstudio?'<span class="catdot" style="background:var(--estudio)"></span>':''}</div>` : ""}
+    `;
+    btn.addEventListener("click", ()=>{ state.selectedDay = day; render(); openDrawer(); });
+    grid.appendChild(btn);
+  });
+
+  if(state.selectedDay){ renderDrawer(); }
+}
+
+function openDrawer(){ document.getElementById("overlay").classList.add("show"); }
+function closeDrawer(){ document.getElementById("overlay").classList.remove("show"); state.selectedDay=null; render(); }
+
+function renderDrawer(){
+  const day = state.selectedDay;
+  document.getElementById("drawerTitle").textContent = `${day} de ${MESES[state.month-1]}`;
+  const ds = dateStrFor(day);
+  const tasks = filterList(state.days[ds] || []);
+  const list = document.getElementById("taskList");
+  const emptyMsg = document.getElementById("emptyMsg");
+  list.innerHTML = "";
+  emptyMsg.classList.toggle("hidden", tasks.length>0);
+
+  tasks.forEach(t=>{
+    const cat = catOf(t);
+    const li = document.createElement("li");
+    li.innerHTML = `
+      <button class="check${t.done?' done':''}" aria-label="${t.done?'Marcar como pendiente':'Marcar como completada'}">${t.done?CHECK_SVG:''}</button>
+      <span class="taskmain">
+        <span class="catpill ${cat}">${CAT_LABEL[cat]}</span>
+        <span class="tasktext${t.done?' done':''}">${escapeHtml(t.text)}</span>
+      </span>
+      <button class="delbtn" aria-label="Eliminar actividad">&#10005;</button>
+    `;
+    li.querySelector(".check").addEventListener("click", ()=>toggleTask(day, t.id));
+    li.querySelector(".delbtn").addEventListener("click", ()=>deleteTask(day, t.id));
+    list.appendChild(li);
+  });
+}
+
+function addTask(day, text, category){
+  const clean = text.trim();
+  if(!clean) return;
+  const ds = dateStrFor(day);
+  if(!state.days[ds]) state.days[ds] = [];
+  state.days[ds].push({id:uid(), text:clean, done:false, category: category==="estudio" ? "estudio" : "trabajo"});
+  saveCurrentMonth();
+  render();
+  document.getElementById("newTaskInput").value = "";
+  document.getElementById("newTaskInput").focus();
+}
+function toggleTask(day, id){
+  const ds = dateStrFor(day);
+  state.days[ds] = (state.days[ds]||[]).map(t=> t.id===id ? {...t, done:!t.done} : t);
+  saveCurrentMonth();
+  render();
+}
+function deleteTask(day, id){
+  const ds = dateStrFor(day);
+  state.days[ds] = (state.days[ds]||[]).filter(t=>t.id!==id);
+  saveCurrentMonth();
+  render();
+}
+
+function exportData(){
+  const all = {};
+  for(let i=0;i<localStorage.length;i++){
+    const key = localStorage.key(i);
+    if(key.startsWith("planner-month-")){
+      all[key] = JSON.parse(localStorage.getItem(key));
+    }
+  }
+  const blob = new Blob([JSON.stringify(all, null, 2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `bitacora-planificacion-${todayStr()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+function importData(file){
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    try{
+      const data = JSON.parse(e.target.result);
+      Object.entries(data).forEach(([key, value])=>{
+        if(key.startsWith("planner-month-")){
+          localStorage.setItem(key, JSON.stringify(value));
+        }
+      });
+      if(currentView==="month"){ state.days = getMonthData(monthKeyOf(state.year, state.month)); render(); }
+      else { renderWeek(); }
+      alert("Datos importados correctamente.");
+    }catch(err){
+      alert("El archivo no tiene un formato válido.");
+    }
+  };
+  reader.readAsText(file);
+}
+
+/* ---------------- WEEK VIEW ---------------- */
+function getMondayOf(date){
+  const d = new Date(date);
+  const dow = (d.getDay()+6)%7;
+  d.setDate(d.getDate()-dow);
+  d.setHours(0,0,0,0);
+  return d;
+}
+function getWeekDates(anchor){
+  const monday = getMondayOf(anchor);
+  const arr = [];
+  for(let i=0;i<7;i++){
+    const d = new Date(monday);
+    d.setDate(monday.getDate()+i);
+    arr.push(d);
+  }
+  return arr;
+}
+
+function renderWeek(){
+  const weekDates = getWeekDates(weekAnchor);
+  const first = weekDates[0], last = weekDates[6];
+  const rangeTxt = first.getMonth()===last.getMonth()
+    ? `Semana del ${first.getDate()} al ${last.getDate()} de ${MESES[first.getMonth()]} ${first.getFullYear()}`
+    : `Semana del ${first.getDate()} de ${MESES[first.getMonth()]} al ${last.getDate()} de ${MESES[last.getMonth()]} ${last.getFullYear()}`;
+  document.getElementById("weekRange").textContent = rangeTxt;
+  document.getElementById("weekDateInput").value = toDateStr(weekAnchor);
+
+  const monthCache = {};
+  weekDates.forEach(d=>{
+    const mKey = monthKeyOf(d.getFullYear(), d.getMonth()+1);
+    if(!monthCache[mKey]) monthCache[mKey] = getMonthData(mKey);
+  });
+
+  const today = todayStr();
+  const container = document.getElementById("weekDays");
+  container.innerHTML = "";
+
+  weekDates.forEach((d, idx)=>{
+    const ds = toDateStr(d);
+    const mKey = monthKeyOf(d.getFullYear(), d.getMonth()+1);
+    const tasks = filterList(monthCache[mKey][ds] || []);
+    const isToday = ds === today;
+
+    const card = document.createElement("div");
+    card.className = "daycard" + (isToday?" today":"");
+
+    const head = document.createElement("div");
+    head.className = "daycard-head";
+    head.innerHTML = `<span class="dname">${DIAS_LARGO[idx]} ${d.getDate()} de ${MESES[d.getMonth()]}</span><span class="dcount">${tasks.filter(t=>t.done).length}/${tasks.length}</span>`;
+    card.appendChild(head);
+
+    const body = document.createElement("div");
+    body.className = "daycard-body";
+
+    if(tasks.length===0){
+      const p = document.createElement("p");
+      p.className = "weekempty";
+      p.textContent = "Sin actividades registradas.";
+      body.appendChild(p);
+    }
+
+    tasks.forEach((t, i)=>{
+      const cat = catOf(t);
+      const row = document.createElement("div");
+      row.className = "weektask";
+      row.innerHTML = `
+        <div class="ordercol">
+          <button class="orderbtn" data-act="up" ${i===0?"disabled":""} aria-label="Mover arriba">&#9650;</button>
+          <button class="orderbtn" data-act="down" ${i===tasks.length-1?"disabled":""} aria-label="Mover abajo">&#9660;</button>
+        </div>
+        <button class="check${t.done?' done':''}" aria-label="${t.done?'Marcar como pendiente':'Marcar como completada'}">${t.done?CHECK_SVG:''}</button>
+        <span class="taskmain">
+          <span class="catpill ${cat}">${CAT_LABEL[cat]}</span>
+          <span class="tasktext${t.done?' done':''}">${escapeHtml(t.text)}</span>
+        </span>
+        <button class="delbtn" aria-label="Eliminar actividad">&#10005;</button>
+      `;
+      row.querySelector('[data-act="up"]').addEventListener("click", ()=>moveWeekTask(mKey, ds, t.id, -1));
+      row.querySelector('[data-act="down"]').addEventListener("click", ()=>moveWeekTask(mKey, ds, t.id, 1));
+      row.querySelector(".check").addEventListener("click", ()=>toggleWeekTask(mKey, ds, t.id));
+      row.querySelector(".delbtn").addEventListener("click", ()=>deleteWeekTask(mKey, ds, t.id));
+      body.appendChild(row);
+    });
+
+    const addRow = document.createElement("div");
+    addRow.className = "weekaddrow";
+    addRow.innerHTML = `<input type="text" placeholder="Nueva actividad…" />
+      <div class="catselect">
+        <button class="active trabajo" data-cat="trabajo">Trabajo</button>
+        <button class="estudio" data-cat="estudio">Estudio</button>
+      </div>
+      <button class="addbtn" aria-label="Agregar">+</button>`;
+    const input = addRow.querySelector("input");
+    const btn = addRow.querySelector("button.addbtn");
+    const catBtns = addRow.querySelectorAll(".catselect button");
+    let localCat = "trabajo";
+    catBtns.forEach(cb=> cb.addEventListener("click", ()=>{
+      localCat = cb.dataset.cat;
+      catBtns.forEach(x=>x.classList.remove("active"));
+      cb.classList.add("active");
+    }));
+    const doAdd = ()=>addWeekTask(mKey, ds, input.value, localCat);
+    btn.addEventListener("click", doAdd);
+    input.addEventListener("keydown", (e)=>{ if(e.key==="Enter") doAdd(); });
+    body.appendChild(addRow);
+
+    card.appendChild(body);
+    container.appendChild(card);
+  });
+}
+
+function addWeekTask(mKey, ds, text, category){
+  const clean = text.trim();
+  if(!clean) return;
+  const data = getMonthData(mKey);
+  if(!data[ds]) data[ds] = [];
+  data[ds].push({id:uid(), text:clean, done:false, category: category==="estudio" ? "estudio" : "trabajo"});
+  setMonthData(mKey, data);
+  renderWeek();
+}
+function toggleWeekTask(mKey, ds, id){
+  const data = getMonthData(mKey);
+  data[ds] = (data[ds]||[]).map(t=> t.id===id ? {...t, done:!t.done} : t);
+  setMonthData(mKey, data);
+  renderWeek();
+}
+function deleteWeekTask(mKey, ds, id){
+  const data = getMonthData(mKey);
+  data[ds] = (data[ds]||[]).filter(t=>t.id!==id);
+  setMonthData(mKey, data);
+  renderWeek();
+}
+function moveWeekTask(mKey, ds, id, direction){
+  const data = getMonthData(mKey);
+  const list = data[ds] || [];
+  const idx = list.findIndex(t=>t.id===id);
+  const newIdx = idx + direction;
+  if(idx<0 || newIdx<0 || newIdx>=list.length) return;
+  const tmp = list[idx];
+  list[idx] = list[newIdx];
+  list[newIdx] = tmp;
+  data[ds] = list;
+  setMonthData(mKey, data);
+  renderWeek();
+}
+
+/* ---------------- DICTADO POR VOZ ---------------- */
+const MESES_L = MESES.map(m=>m.toLowerCase());
+const WEEKDAY_IDX = {"lunes":0,"martes":1,"miércoles":2,"miercoles":2,"jueves":3,"viernes":4,"sábado":5,"sabado":5,"domingo":6};
+const ORDINALES = ["primero","segundo","tercero","cuarto","quinto","sexto","séptimo","septimo","octavo","noveno","décimo","decimo"];
+
+function detectDays(text){
+  const lower = text.toLowerCase();
+  const today0 = new Date(); today0.setHours(0,0,0,0);
+  const triggers = [];
+  let m, re;
+
+  re = /\bpasado\s+mañana\b/gi;
+  while((m=re.exec(lower))){ const d=new Date(today0); d.setDate(d.getDate()+2); triggers.push({index:m.index, len:m[0].length, date:d}); }
+
+  re = /\bhoy\b/gi;
+  while((m=re.exec(lower))){ triggers.push({index:m.index, len:m[0].length, date:new Date(today0)}); }
+
+  re = /\bmañana\b/gi;
+  while((m=re.exec(lower))){ const d=new Date(today0); d.setDate(d.getDate()+1); triggers.push({index:m.index, len:m[0].length, date:d}); }
+
+  re = /\b(el\s+)?(pr[oó]xim[oa]\s+)?(lunes|martes|mi[ée]rcoles|jueves|viernes|s[áa]bado|domingo)\b/gi;
+  while((m=re.exec(lower))){
+    const wdKey = m[3].normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+    const wd = {lunes:0,martes:1,miercoles:2,jueves:3,viernes:4,sabado:5,domingo:6}[wdKey];
+    const forceNext = !!m[2];
+    const d = new Date(today0);
+    const curDow = (d.getDay()+6)%7;
+    let diff = (wd - curDow + 7) % 7;
+    if(forceNext && diff===0) diff = 7;
+    d.setDate(d.getDate()+diff);
+    triggers.push({index:m.index, len:m[0].length, date:d});
+  }
+
+  const monthPart = MESES_L.join("|");
+  re = new RegExp("\\b(\\d{1,2})\\s+de\\s+("+monthPart+")\\b(?:\\s+de\\s+(\\d{4}))?","gi");
+  while((m=re.exec(lower))){
+    const day = parseInt(m[1],10);
+    const mi = MESES_L.indexOf(m[2]);
+    const yr = m[3] ? parseInt(m[3],10) : today0.getFullYear();
+    if(mi>=0 && day>=1 && day<=31){ triggers.push({index:m.index, len:m[0].length, date:new Date(yr, mi, day)}); }
+  }
+
+  triggers.sort((a,b)=> a.index-b.index || b.len-a.len);
+  const accepted = [];
+  let lastEnd = -1;
+  triggers.forEach(t=>{
+    if(t.index >= lastEnd){ accepted.push(t); lastEnd = t.index + t.len; }
+  });
+  accepted.sort((a,b)=>a.index-b.index);
+  return accepted;
+}
+
+function splitActivities(raw){
+  let t = raw.trim();
+  if(!t) return [];
+  t = t.replace(/^[,;:.]+/,"").trim();
+  t = t.replace(/^(coloca|colocar|agrega|agregar|pon|poner|añade|añadir|anota|anotar)\b[:,]?\s*/i, "");
+  const ordRe = new RegExp("\\b("+ORDINALES.join("|")+")\\b[:,]?\\s*","gi");
+  t = t.replace(ordRe, "|");
+  let parts = t.split(/\||;|\.\s+|\.$/g);
+  parts = parts.flatMap(p=>p.split(/,\s*/g));
+  parts = parts.map(p=>p.trim()).filter(p=>p.length>1);
+  if(parts.length===0 && t.trim().length>1) parts = [t.trim()];
+  return parts;
+}
+
+function buildDayGroups(text){
+  const triggers = detectDays(text);
+  const groups = [];
+  if(triggers.length===0){
+    const acts = splitActivities(text);
+    if(acts.length>0){ groups.push({date:new Date(), activities:acts}); }
+    return groups;
+  }
+  for(let i=0;i<triggers.length;i++){
+    const start = triggers[i].index + triggers[i].len;
+    const end = i+1<triggers.length ? triggers[i+1].index : text.length;
+    const acts = splitActivities(text.slice(start, end));
+    if(acts.length===0) continue;
+    const ds = toDateStr(triggers[i].date);
+    const existing = groups.find(g=>toDateStr(g.date)===ds);
+    if(existing){ existing.activities.push(...acts); }
+    else { groups.push({date:new Date(triggers[i].date), activities:acts}); }
+  }
+  groups.sort((a,b)=>a.date-b.date);
+  return groups;
+}
+
+function dayLabel(d){
+  return `${DIAS_LARGO[(d.getDay()+6)%7]} ${d.getDate()} de ${MESES[d.getMonth()]}`;
+}
+
+function renderDictateResults(groups){
+  const container = document.getElementById("dictateResults");
+  container.innerHTML = "";
+  if(groups.length===0){
+    container.innerHTML = `<p class="noresults">No se detectaron actividades. Ajusta el texto arriba o agrega las líneas manualmente.</p>`;
+    document.getElementById("dictateFooter").classList.add("hidden");
+    return;
+  }
+  groups.forEach(g=>{
+    const card = document.createElement("div");
+    card.className = "daygroup";
+    card.dataset.cat = "trabajo";
+
+    const head = document.createElement("div");
+    head.className = "daygroup-head";
+    const labelSpan = document.createElement("span");
+    labelSpan.className = "glabel";
+    labelSpan.textContent = dayLabel(g.date);
+    const dateInput = document.createElement("input");
+    dateInput.type = "date";
+    dateInput.className = "draftdate";
+    dateInput.value = toDateStr(g.date);
+    dateInput.addEventListener("change", (e)=>{
+      if(!e.target.value) return;
+      const nd = new Date(e.target.value+"T00:00:00");
+      labelSpan.textContent = dayLabel(nd);
+    });
+    const catSel = document.createElement("div");
+    catSel.className = "catselect";
+    catSel.innerHTML = `<button class="active trabajo" data-cat="trabajo">Trabajo</button><button class="estudio" data-cat="estudio">Estudio</button>`;
+    catSel.querySelectorAll("button").forEach(cb=> cb.addEventListener("click", ()=>{
+      card.dataset.cat = cb.dataset.cat;
+      catSel.querySelectorAll("button").forEach(x=>x.classList.remove("active"));
+      cb.classList.add("active");
+    }));
+    head.appendChild(labelSpan);
+    head.appendChild(catSel);
+    head.appendChild(dateInput);
+    card.appendChild(head);
+
+    const body = document.createElement("div");
+    body.className = "daygroup-body";
+
+    function addRow(text){
+      const row = document.createElement("div");
+      row.className = "draftrow";
+      const input = document.createElement("input");
+      input.type = "text";
+      input.value = text;
+      const del = document.createElement("button");
+      del.innerHTML = "&#10005;";
+      del.setAttribute("aria-label","Eliminar línea");
+      del.addEventListener("click", ()=> row.remove());
+      row.appendChild(input);
+      row.appendChild(del);
+      body.insertBefore(row, addLine);
+      return row;
+    }
+
+    const addLine = document.createElement("button");
+    addLine.className = "addlinebtn";
+    addLine.textContent = "+ agregar línea";
+    addLine.addEventListener("click", ()=> addRow("").querySelector("input").focus());
+    body.appendChild(addLine);
+
+    g.activities.forEach(act=> addRow(act));
+
+    card.appendChild(body);
+    container.appendChild(card);
+  });
+  document.getElementById("dictateFooter").classList.remove("hidden");
+}
+
+function saveDictateResults(){
+  const cards = document.querySelectorAll("#dictateResults .daygroup");
+  let addedCount = 0;
+  cards.forEach(card=>{
+    const dateVal = card.querySelector(".draftdate").value;
+    if(!dateVal) return;
+    const category = card.dataset.cat === "estudio" ? "estudio" : "trabajo";
+    const d = new Date(dateVal+"T00:00:00");
+    const ds = toDateStr(d);
+    const mKey = monthKeyOf(d.getFullYear(), d.getMonth()+1);
+    const texts = Array.from(card.querySelectorAll(".draftrow input")).map(i=>i.value.trim()).filter(v=>v.length>0);
+    if(texts.length===0) return;
+    const data = getMonthData(mKey);
+    if(!data[ds]) data[ds] = [];
+    texts.forEach(txt=> data[ds].push({id:uid(), text:txt, done:false, category}));
+    setMonthData(mKey, data);
+    addedCount += texts.length;
+  });
+  return addedCount;
+}
+
+function closeDictate(){
+  document.getElementById("dictateOverlay").classList.remove("show");
+  if(isRecording && recognition){ recognition.stop(); isRecording=false; updateMicUI(); }
+}
+
+const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition = null;
+let isRecording = false;
+
+function updateMicUI(){
+  const btn = document.getElementById("micBtn");
+  btn.classList.toggle("recording", isRecording);
+  document.getElementById("micLabel").textContent = isRecording ? "Detener" : "Grabar";
+}
+
+if(SpeechRec){
+  recognition = new SpeechRec();
+  recognition.lang = "es-419";
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.onresult = (e)=>{
+    let text = "";
+    for(let i=0;i<e.results.length;i++){ text += e.results[i][0].transcript; }
+    document.getElementById("transcriptBox").value = text;
+  };
+  recognition.onerror = (e)=>{
+    document.getElementById("micStatus").textContent = e.error === "not-allowed" ? "Permiso de micrófono denegado." : "No se pudo grabar. Intenta de nuevo.";
+    isRecording = false; updateMicUI();
+  };
+  recognition.onend = ()=>{ isRecording = false; updateMicUI(); };
+} else {
+  document.getElementById("micBtn").disabled = true;
+  document.getElementById("micLabel").textContent = "No disponible";
+  document.getElementById("micStatus").textContent = "Este navegador no soporta dictado. Escribe o pega el texto abajo.";
+}
+
+document.getElementById("micBtn").addEventListener("click", ()=>{
+  if(!recognition) return;
+  if(!isRecording){
+    try{
+      recognition.start();
+      isRecording = true;
+      updateMicUI();
+      document.getElementById("micStatus").textContent = "Escuchando…";
+    }catch(err){ console.error(err); }
+  } else {
+    recognition.stop();
+    document.getElementById("micStatus").textContent = "";
+  }
+});
+
+document.getElementById("openDictateBtn").addEventListener("click", ()=>{
+  document.getElementById("dictateOverlay").classList.add("show");
+});
+document.getElementById("dictateCloseBtn").addEventListener("click", closeDictate);
+document.getElementById("dictateCancelBtn").addEventListener("click", closeDictate);
+document.getElementById("dictateOverlay").addEventListener("click", (e)=>{ if(e.target.id==="dictateOverlay") closeDictate(); });
+
+document.getElementById("analyzeBtn").addEventListener("click", ()=>{
+  const text = document.getElementById("transcriptBox").value;
+  const groups = buildDayGroups(text);
+  renderDictateResults(groups);
+});
+
+document.getElementById("dictateSaveBtn").addEventListener("click", ()=>{
+  const added = saveDictateResults();
+  closeDictate();
+  document.getElementById("transcriptBox").value = "";
+  document.getElementById("dictateResults").innerHTML = "";
+  document.getElementById("dictateFooter").classList.add("hidden");
+  if(currentView==="month"){ state.days = getMonthData(monthKeyOf(state.year, state.month)); render(); }
+  else { renderWeek(); }
+  if(added>0){ alert(`${added} actividad(es) agregada(s) a la agenda.`); }
+});
+
+function resetStudyPlan(){
+  const ok = confirm("Esto reemplazará todas las actividades de categoría \"Estudio\" en julio–octubre 2026 con el plan CFA actualizado (empezando mañana). Las actividades de \"Trabajo\" no se ven afectadas. Si habías agregado tus propias actividades de Estudio manualmente en ese rango, también se eliminarán. ¿Continuar?");
+  if(!ok) return;
+  const monthsToReset = ["2026-07","2026-08","2026-09","2026-10"];
+  monthsToReset.forEach(mKey=>{
+    let data = {};
+    try{
+      const raw = localStorage.getItem(storageKey(mKey));
+      data = raw ? JSON.parse(raw) : {};
+    }catch(e){ data = {}; }
+    Object.keys(data).forEach(ds=>{
+      data[ds] = data[ds].filter(t => catOf(t) !== "estudio");
+      if(data[ds].length===0) delete data[ds];
+    });
+    Object.entries(SEED_STUDY).forEach(([date, items])=>{
+      if(!date.startsWith(mKey)) return;
+      if(!data[date]) data[date] = [];
+      items.forEach(it=> data[date].push({id:uid(), text:it.text, done:false, category:it.category}));
+    });
+    localStorage.setItem(storageKey(mKey), JSON.stringify(data));
+  });
+  if(currentView==="month"){ state.days = getMonthData(monthKeyOf(state.year, state.month)); render(); }
+  else { renderWeek(); }
+  alert("Plan de estudio CFA actualizado.");
+}
+document.getElementById("resetStudyBtn").addEventListener("click", resetStudyPlan);
+
+/* ---------------- TAREAS Y EXÁMENES ---------------- */
+function loadAssignments(){ try{ return JSON.parse(localStorage.getItem("planner-assignments")||"[]"); }catch(e){ return []; } }
+function saveAssignments(arr){ localStorage.setItem("planner-assignments", JSON.stringify(arr)); }
+function loadExams(){ try{ return JSON.parse(localStorage.getItem("planner-exams")||"[]"); }catch(e){ return []; } }
+function saveExams(arr){ localStorage.setItem("planner-exams", JSON.stringify(arr)); }
+
+let assignments = [];
+let exams = [];
+
+function daysLeftInfo(dueDate, status){
+  if(status==="completado") return {text:"¡Completado!", cls:"done"};
+  if(!dueDate) return {text:"—", cls:""};
+  const d = new Date(dueDate+"T00:00:00");
+  const t = new Date(); t.setHours(0,0,0,0);
+  const diff = Math.round((d-t)/86400000);
+  if(diff<0) return {text:`Vencido (${Math.abs(diff)}d)`, cls:"overdue"};
+  if(diff===0) return {text:"Hoy", cls:"overdue"};
+  return {text:`${diff} día${diff===1?"":"s"}`, cls:""};
+}
+
+function renderAssignments(){
+  const tbody = document.getElementById("assignBody");
+  tbody.innerHTML = "";
+  if(assignments.length===0){
+    tbody.innerHTML = `<tr><td colspan="6" class="tableempty">Sin tareas registradas. Usa "+ Agregar tarea" para empezar.</td></tr>`;
+    return;
+  }
+  assignments.forEach((a, idx)=>{
+    const dl = daysLeftInfo(a.dueDate, a.status);
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><input type="text" value="${escapeHtml(a.course||"")}" data-f="course" placeholder="Curso"/></td>
+      <td><input type="text" value="${escapeHtml(a.name||"")}" data-f="name" placeholder="Tarea"/></td>
+      <td><button class="statuspill ${a.status}">${a.status==="completado"?"¡Completado!":"Pendiente"}</button></td>
+      <td><input type="date" value="${a.dueDate||""}" data-f="dueDate"/></td>
+      <td><span class="daysleft ${dl.cls}">${dl.text}</span></td>
+      <td><button class="rowdel" aria-label="Eliminar tarea">&#10005;</button></td>
+    `;
+    tr.querySelectorAll("input[data-f]").forEach(inp=>{
+      inp.addEventListener("change", ()=>{ assignments[idx][inp.dataset.f]=inp.value; saveAssignments(assignments); renderAssignments(); });
+    });
+    tr.querySelector(".statuspill").addEventListener("click", ()=>{
+      assignments[idx].status = assignments[idx].status==="completado" ? "pendiente" : "completado";
+      saveAssignments(assignments); renderAssignments();
+    });
+    tr.querySelector(".rowdel").addEventListener("click", ()=>{
+      assignments.splice(idx,1); saveAssignments(assignments); renderAssignments();
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+function renderExams(){
+  const tbody = document.getElementById("examBody");
+  tbody.innerHTML = "";
+  if(exams.length===0){
+    tbody.innerHTML = `<tr><td colspan="6" class="tableempty">Sin exámenes registrados. Usa "+ Agregar examen" para empezar.</td></tr>`;
+    return;
+  }
+  const sorted = exams.map((e,i)=>({...e, _i:i})).sort((a,b)=> (a.date||"9999").localeCompare(b.date||"9999"));
+  sorted.forEach(ex=>{
+    const idx = ex._i;
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><input type="checkbox" class="examcheck" ${ex.completed?"checked":""} aria-label="Examen completado"/></td>
+      <td><input type="date" value="${ex.date||""}" data-f="date"/></td>
+      <td><input type="text" value="${escapeHtml(ex.course||"")}" data-f="course" placeholder="Curso"/></td>
+      <td><input type="text" value="${escapeHtml(ex.name||"")}" data-f="name" placeholder="Examen (ej. parcial, final)"/></td>
+      <td><button class="importantbtn ${ex.important?"active":""}" aria-label="Marcar como importante">!</button></td>
+      <td><button class="rowdel" aria-label="Eliminar examen">&#10005;</button></td>
+    `;
+    tr.querySelectorAll("input[data-f]").forEach(inp=>{
+      inp.addEventListener("change", ()=>{ exams[idx][inp.dataset.f]=inp.value; saveExams(exams); renderExams(); });
+    });
+    tr.querySelector(".examcheck").addEventListener("change", (e)=>{ exams[idx].completed=e.target.checked; saveExams(exams); });
+    tr.querySelector(".importantbtn").addEventListener("click", ()=>{ exams[idx].important=!exams[idx].important; saveExams(exams); renderExams(); });
+    tr.querySelector(".rowdel").addEventListener("click", ()=>{ exams.splice(idx,1); saveExams(exams); renderExams(); });
+    tbody.appendChild(tr);
+  });
+}
+
+document.getElementById("addAssignBtn").addEventListener("click", ()=>{
+  assignments.push({id:uid(), course:"", name:"", status:"pendiente", dueDate:""});
+  saveAssignments(assignments);
+  renderAssignments();
+});
+document.getElementById("addExamBtn").addEventListener("click", ()=>{
+  exams.push({id:uid(), date:"", course:"", name:"", important:false, completed:false});
+  saveExams(exams);
+  renderExams();
+});
+
+/* ---------------- INIT ---------------- */
+const monthSelect = document.getElementById("monthSelect");
+MESES.forEach((m,i)=>{
+  const opt = document.createElement("option");
+  opt.value = i+1; opt.textContent = m;
+  monthSelect.appendChild(opt);
+});
+monthSelect.value = state.month;
+document.getElementById("yearInput").value = state.year;
+
+monthSelect.addEventListener("change", (e)=> goToMonth(state.year, Number(e.target.value)));
+document.getElementById("yearInput").addEventListener("change", (e)=>{
+  const y = Number(e.target.value);
+  if(String(y).length===4) goToMonth(y, state.month);
+});
+document.getElementById("prevBtn").addEventListener("click", ()=> goToMonth(state.year, state.month-1));
+document.getElementById("nextBtn").addEventListener("click", ()=> goToMonth(state.year, state.month+1));
+document.getElementById("todayBtn").addEventListener("click", ()=>{
+  const d = new Date();
+  goToMonth(d.getFullYear(), d.getMonth()+1);
+  state.selectedDay = d.getDate();
+  render();
+  openDrawer();
+});
+document.getElementById("closeBtn").addEventListener("click", closeDrawer);
+document.getElementById("overlay").addEventListener("click", (e)=>{ if(e.target.id==="overlay") closeDrawer(); });
+document.getElementById("addTaskBtn").addEventListener("click", ()=> addTask(state.selectedDay, document.getElementById("newTaskInput").value, newTaskCategory));
+document.getElementById("newTaskInput").addEventListener("keydown", (e)=>{ if(e.key==="Enter") addTask(state.selectedDay, e.target.value, newTaskCategory); });
+document.querySelectorAll("#newTaskCat button").forEach(b=> b.addEventListener("click", ()=>{
+  newTaskCategory = b.dataset.cat;
+  document.querySelectorAll("#newTaskCat button").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active");
+}));
+document.getElementById("exportBtn").addEventListener("click", exportData);
+document.getElementById("importBtn").addEventListener("click", ()=> document.getElementById("importFile").click());
+document.getElementById("importFile").addEventListener("change", (e)=>{ if(e.target.files[0]) importData(e.target.files[0]); });
+
+document.getElementById("tabMonth").addEventListener("click", ()=>showView("month"));
+document.getElementById("tabWeek").addEventListener("click", ()=>showView("week"));
+document.getElementById("tabTasks").addEventListener("click", ()=>showView("tasks"));
+document.getElementById("weekDateInput").addEventListener("change", (e)=>{
+  if(e.target.value){ weekAnchor = new Date(e.target.value+"T00:00:00"); renderWeek(); }
+});
+document.getElementById("weekTodayBtn").addEventListener("click", ()=>{ weekAnchor = new Date(); renderWeek(); });
+
+document.querySelectorAll("#catFilter .segbtn").forEach(btn=> btn.addEventListener("click", ()=>{
+  categoryFilter = btn.dataset.cat;
+  document.querySelectorAll("#catFilter .segbtn").forEach(b=>b.classList.toggle("active", b===btn));
+  if(currentView==="month") render(); else renderWeek();
+}));
+
+// initial load
+state.days = getMonthData(monthKeyOf(state.year, state.month));
+render();
+</script>
+</body>
+</html>
